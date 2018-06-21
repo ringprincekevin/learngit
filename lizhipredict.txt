@@ -1,0 +1,37 @@
+import pandas as pd
+import numpy as np
+from sklearn import linear_model
+from sklearn.model_selection import cross_val_score
+from sklearn.preprocessing import LabelEncoder
+import seaborn
+import matplotlib.pyplot as plt
+
+lizhi = pd.read_csv('D:/pfm_train.csv') #读取csv文件，注意路径不能含有中文，否则会报错
+
+
+# plot to find better features
+features = ['Age', 'BusinessTravel', 'Department', 'DistanceFromHome', 'Education', 'EducationField', 'EnvironmentSatisfaction', 'Gender', 'JobInvolvement', 'JobLevel', 'JobRole', 'JobSatisfaction', 'MaritalStatus', 'MonthlyIncome', 'NumCompaniesWorked', 'Over18', 'OverTime', 'PercentSalaryHike', 'PerformanceRating', 'RelationshipSatisfaction', 'StandardHours', 'StockOptionLevel', 'TotalWorkingYears', 'TrainingTimesLastYear', 'WorkLifeBalance', 'YearsAtCompany', 'YearsInCurrentRole', 'YearsSinceLastPromotion', 'YearsWithCurrManager']
+for items in features:
+    seaborn.boxplot(x='Attrition', y=items, data=lizhi)
+    plt.show()
+
+
+lm = linear_model.LogisticRegression()
+need_le_features=[ 'BusinessTravel', 'Department', 'EducationField',  'Gender', 'JobRole',  'MaritalStatus', 'Over18', 'OverTime'] #将字符型的数据提取出来，供下一步使用LableEncoder转为数值型，因为sklearn该模型无法处理字符数据
+lizhi[need_le_features]=lizhi[need_le_features].apply(LabelEncoder().fit_transform)
+features = ['Age', 'BusinessTravel', 'Department', 'DistanceFromHome', 'Education', 'EducationField', 'EnvironmentSatisfaction', 'Gender', 'JobInvolvement', 'JobLevel', 'JobRole', 'JobSatisfaction', 'MaritalStatus', 'MonthlyIncome', 'NumCompaniesWorked', 'Over18', 'OverTime', 'PercentSalaryHike', 'PerformanceRating', 'RelationshipSatisfaction', 'StandardHours', 'StockOptionLevel', 'TotalWorkingYears', 'TrainingTimesLastYear', 'WorkLifeBalance', 'YearsAtCompany', 'YearsInCurrentRole', 'YearsSinceLastPromotion', 'YearsWithCurrManager']
+X = lizhi[features] #注意复习pandas的Series 和 DataFrame数据结构
+y = lizhi['Attrition']
+scores = cross_val_score(lm, X, y, cv=5, scoring='accuracy') #进行交叉检验
+print(np.mean(scores)) #使用nmupy的mean()对交叉检验结果取平均值
+
+#使用得到的模型对test数据集进行预测
+model = lm.fit(X,y) #使用模型去匹配自变量和因变量，得到模型的参数
+test_data = pd.read_csv('D:/pfm_test.csv')
+test_data[need_le_features] = test_data[need_le_features].apply(LabelEncoder().fit_transform)
+X_test = test_data[features]
+output = model.predict(X_test)
+#将得到的结果写入csv文件
+df = pd.DataFrame({'result': output}) #pandas需要从DataFrame 或 Series（需要核实）的数据写入csv文件
+df.to_csv('D:/lizhipredict180620.csv', index=False) #header指的列，pandas写入csv使用的是to_csv
+#print(output)
